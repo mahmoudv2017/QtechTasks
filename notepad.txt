@@ -1,0 +1,5 @@
+selecting products will persist after changing pages
+dont forget to add types
+dont forget to add new paginaedNotFiltered arr
+optimzie the filter method
+optimize the ngOnchanges
