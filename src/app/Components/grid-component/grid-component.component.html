@@ -1,0 +1,42 @@
+
+
+<div  *ngIf="rows">
+  <table style="width: 70vw; " border="2">
+    <thead>
+      <th><input type="checkbox" (change)="CheckAll($event)" [checked]="Allchecked" ></th>
+      <tr >
+
+        <th *ngFor="let head of columns;">{{head}}</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+        <tr *ngFor="let record of ProjectedData;let i = index">
+          <td>{{record.ID}}  <span> <input type="checkbox" (change)="CheckOne($event,i)" [checked]="record.checked" /> </span> </td>
+          <td>{{record.address}}</td>
+          <td>{{record.category}}</td>
+          <td>{{record.priority}}</td>
+          <td>{{record.state}}</td>
+          <td>{{record.history}}</td>
+          <td>{{record.lastUpdate}}</td>
+          <td>{{record.time}}</td>
+          <td>{{record.reporter}}</td>
+          <td>{{record.JobNumber}}</td>
+          <td>{{record.management}}</td>
+          <td>{{record.belongsTo}}</td>
+        </tr>
+
+    </tbody>
+  </table>
+
+  <div style="display: flex; justify-content: center; gap: 2rem;">
+    <button [disabled]="prev" (click)="PrevPage()">Previous</button>
+    <p >{{PageNum}}</p>
+    <button [disabled]="next" (click)="NextPage()">Next</button>
+
+  </div>
+
+</div>
+
+
