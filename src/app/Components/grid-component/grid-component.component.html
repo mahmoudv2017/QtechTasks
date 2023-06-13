@@ -3,28 +3,26 @@
 <div  *ngIf="rows">
   <table style="width: 70vw; " border="2">
     <thead>
-      <th><input type="checkbox" (change)="CheckAll($event)" [checked]="Allchecked" ></th>
-      <tr >
 
-        <th *ngFor="let head of columns;">{{head}}</th>
+      <tr >
+        <th><input type="checkbox" (change)="CheckAll($event)" [checked]="Allchecked" ></th>
+        <th *ngFor="let head of columns;">{{head}}
+          <div *ngIf="options.SortableColumns.includes(head)" style="transform: translateX(-10%); width: fit-content; margin: auto;">
+            <button (click)="SortByColumn(head , 'desc')" class="desc" >></button>
+            <button (click)="SortByColumn(head , 'asc')" class="asc" >></button>
+          </div>
+
+        </th>
       </tr>
     </thead>
 
     <tbody>
 
         <tr *ngFor="let record of ProjectedData;let i = index">
-          <td>{{record.ID}}  <span> <input type="checkbox" (change)="CheckOne($event,i)" [checked]="record.checked" /> </span> </td>
-          <td>{{record.address}}</td>
-          <td>{{record.category}}</td>
-          <td>{{record.priority}}</td>
-          <td>{{record.state}}</td>
-          <td>{{record.history}}</td>
-          <td>{{record.lastUpdate}}</td>
-          <td>{{record.time}}</td>
-          <td>{{record.reporter}}</td>
-          <td>{{record.JobNumber}}</td>
-          <td>{{record.management}}</td>
-          <td>{{record.belongsTo}}</td>
+          <td><span> <input type="checkbox" (change)="CheckOne($event,i)" [checked]="record.checked" /> </span></td>
+          <td *ngFor="let column of columns" >
+            {{record[column]}}
+          </td>
         </tr>
 
     </tbody>

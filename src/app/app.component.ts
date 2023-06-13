@@ -153,6 +153,18 @@ const data = [
 ]
 
 
+// "ID"
+// "address"
+// "category"
+// "priority"
+// "state"
+// "history"
+// "lastUpdate"
+// "time"
+// "reporter"
+// "JobNumber"
+// "management"
+// "belongsTo"
 
 @Component({
   selector: 'app-root',
@@ -162,31 +174,65 @@ const data = [
 export class AppComponent {
   title = 'QteckTask4';
   ParentApiData:any
-  config:any
+  config:{
 
-  columns:any
+      isPaginateByApi : boolean,
+      ApiPath : string,
+      UniqueID : string,
+      InitialPaging:number,
+      ItemsPerPage:number
+  }
+  columns:any[]
 
   constructor() {
-    this.ParentApiData = data.map(obj => ({...obj , checked:false}))
+  //send data to child with the necessary columns only
+  this.columns = [{
+    key:"address",
+    isSortable:true,
+    type:String,
+    perfered_width : 20,
+    Default_Sorted : 'asc'
+  }, {
+    key:"reporter",
+    isSortable:true,
+    type:String,
+    perfered_width : 20,
+    Default_Sorted : 'desc'
+  },
+  {
+    key:"history",
+    isSortable:true,
+    type: Date ,
+    perfered_width : 20,
+    Default_Sorted : 'desc'
+  }
+]
+  this.ParentApiData = data
+  /*
+.map(obj => {
+    Object.keys(obj).forEach(key => {
+      if(key != )
+    })
+  })
+  */
     this.config={
-      SortableColumns:[{column:'id' , sortDirection:'asc'}],
+      isPaginateByApi : true,
+      ApiPath : '../data.json',
+      UniqueID : 'ID',
       InitialPaging:1,
       ItemsPerPage:5
     }
-    this.columns = ['ID',"address"]
-    console.log(data)
+    //need to improve
+
+
 
 
   }
 
   onRecordSelection(selectedrow:any){
-    this.ParentApiData = this.ParentApiData.map((obj:any) => {
-      if( selectedrow[0].includes(obj['ID']) ){
-        return {...obj , checked:selectedrow[1]}
-      }
-      return obj
-    })
-
+    //listener for the developer to implement custom logic
     console.log(selectedrow)
   }
+
+
 }

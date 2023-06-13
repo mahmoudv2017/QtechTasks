@@ -1,23 +1,6 @@
 import { Component, Input, OnChanges, Output, EventEmitter, OnInit, SimpleChanges } from '@angular/core';
 
 
-
-
-interface Report {
-  ID: number;
-  address: string;
-  category: string;
-  priority: string;
-  state: string;
-  history: string;
-  lastUpdate: string;
-  time: string;
-  reporter: string;
-  JobNumber: number;
-  management: string;
-  belongsTo: string;
-}
-
 @Component({
   selector: 'app-grid-component',
   templateUrl: './grid-component.component.html',
@@ -26,48 +9,43 @@ interface Report {
 
 
 
-export class GridComponentComponent implements OnInit, OnChanges {
+export class GridComponentComponent implements OnInit {
 
 
-  @Input() rows!: any
+  //filterd arrays
+  FilteredNotProjectedData: any
+  ProjectedData: any
+  //AllDataAfterPagination: any
+
   maxPage!: number
   maxItems!: number
-  ProjectedData: any
-  FilteredNotProjectedData: any
   PageNum!: number
 
-  @Input() options = {
-    SortableColumns: [{ column: 'id', sortDirection: 'asc' }],
-    InitialPaging: 1,
-    ItemsPerPage: 5
-  }
+  @Input() rows!: any
+  @Input() options!:any
 
-  @Input() columns!: [string]
+  @Input() columns!: string[]
   @Output() RecordSelection = new EventEmitter()
 
-  constructor() {
+  constructor() {}
 
-
-
-  }
-  ngOnChanges(changes: SimpleChanges): void {
-
-    this.filterData()
-    this.ProjectedData = this.ProjectedData.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
-    debugger
-  }
 
   filterData() {
+
     var allkeys = Object.keys(this.rows[0])
     var RemainngKeys = allkeys.filter(key => !this.columns.includes(key))
+
+    //need to improve
     this.ProjectedData = this.rows.map((obj: any) => ({ ...obj }))
 
 
     this.FilteredNotProjectedData = this.ProjectedData.map((obj: any) => {
       for (const key of RemainngKeys) {
-        if (key != 'checked') {
+        if(key != 'checked'){
           delete obj[key]
         }
+
+
 
       }
       return obj
@@ -78,85 +56,127 @@ export class GridComponentComponent implements OnInit, OnChanges {
 
   }
   ngOnInit(): void {
-    var initialPage = this.options.InitialPaging || 1
-
-    this.filterData()
-    this.maxItems = this.options.ItemsPerPage || 5
-    this.maxPage = Math.ceil(this.rows!.length / this.maxItems)
-    this.PageNum = initialPage
-    this.ProjectedData = this.ProjectedData.slice(5 * (initialPage - 1), this.maxItems)
+    this.init()
   }
 
   //Pagination Part
   get next() {
-    if (this.PageNum == this.maxPage) {
-      return true
-    }
-    return false
+
+    return this.PageNum == this.maxPage
+
   }
 
   get prev() {
-    if (this.PageNum <= 1) {
-      return true
-    }
-    return false
+    return this.PageNum <= 1
   }
 
   get Allchecked() {
-    console.log('getting all checked')
+    debugger
     for (let i = 0; i < this.ProjectedData.length; i++) {
-      if (this.ProjectedData[i].checked == false) {
+      if (   !this.ProjectedData[i].hasOwnProperty('checked') || this.ProjectedData[i].checked == false) {
         return false
       }
     }
-    debugger
     return true
 
   }
-
+  SliceTable(pagenum:number){
+    //maxItems = 5 , pagenum = 2
+    let start = this.maxItems * (pagenum - 1)
+    let end = this.maxItems * pagenum
+    //need to improv
+    this.ProjectedData = this.FilteredNotProjectedData.slice(start, end) //start = 5 , end = 10
+  }
   NextPage() {
 
     var nextpage = ++this.PageNum
-    let start = this.maxItems * (nextpage - 1)
-    let end = this.maxItems * nextpage
-    this.ProjectedData = this.FilteredNotProjectedData.slice(start, end)
-    console.log(this.rows)
+    this.SliceTable(nextpage)
   }
   PrevPage() {
-    debugger
+
     var prevPage = --this.PageNum
-    let start = this.maxItems * (prevPage - 1)
-    let end = this.maxItems * prevPage
-    this.ProjectedData = this.FilteredNotProjectedData.slice(start, end)
+    this.SliceTable(prevPage)
   }
 
 
 
+  init(){
 
+    var initialPage = this.options.InitialPaging || 1
+    this.maxItems = this.options.ItemsPerPage || 5
+
+    this.filterData()
+    this.maxPage = Math.ceil(this.rows!.length / this.maxItems)
+    this.PageNum = initialPage
+
+    this.ProjectedData = this.ProjectedData.slice(5 * (initialPage - 1), this.maxItems)
+  }
 
 
   //CheckBox Part
   CheckAll(event: any) {
 
-    let id_arr: any[] = []
-    this.ProjectedData.forEach((element: any) => {
+    let id_arr: string[] = []
+
+    this.rows.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
+    .forEach((element: any) => {
       id_arr.push(element['ID']);
     });
 
+    this.onRecordSelection([id_arr, event.target.checked])
     this.RecordSelection.emit([id_arr, event.target.checked])
+    //
 
   }
 
   CheckOne(event: any, index: number) {
-
+debugger
     let id_arr: any[] = []
+    let targetIndex = this.PageNum > 1 ? index + (this.maxItems) : index
 
-    id_arr.push(this.ProjectedData[index]['ID']);
-
+    //need to improv
+    id_arr.push(this.rows[targetIndex]['ID']);
+    this.onRecordSelection([id_arr, event.target.checked])
     this.RecordSelection.emit([id_arr, event.target.checked])
+   //this.onRecordSelection([id_arr, event.target.checked])
 
   }
 
+  SortByColumn(column:string , SortDirection:string){
+    let directtion = (SortDirection == 'asc' ? 1 : -1)
+    //need to improv
+    this.rows.sort((a:any, b:any) => {
+
+        if (a[column] < b[column]) {
+          return -1 * directtion;
+        } else if (a[column] > b[column]) {
+          return 1 * directtion;
+        } else {
+          return 0;
+        }
+      });
+
+      this.updateTable()
+  }
+
+
+  updateTable(){
+
+
+    this.filterData()
+    this.ProjectedData = this.ProjectedData.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
+  }
+
+  onRecordSelection(selectedrow:any){
+    this.rows = this.rows.map((obj:any) => {
+      if( selectedrow[0].includes(obj['ID']) ){
+        return {...obj , checked:selectedrow[1]}
+      }
+      return obj
+    })
+    this.ProjectedData = this.FilteredNotProjectedData.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
+    //console.log(selectedrow)
+  }
 
 
 }
