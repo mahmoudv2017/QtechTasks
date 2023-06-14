@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
+import {ColumnDefinition , ObjectConfig} from '../app/types/types'
 
-const data = [
+const data:any[] = [
 
 
 {
@@ -82,7 +83,7 @@ const data = [
     "category" : "cleaning",
     "priority" : "low",
     "state":"assigned",
-    "history" : "06/11/2023",
+    "history" : "11/06/2023",
     "lastUpdate" : "06/12/2023",
     "time" : "09:30",
     "reporter" : "Lisa Smith",
@@ -173,56 +174,76 @@ const data = [
 })
 export class AppComponent {
   title = 'QteckTask4';
-  ParentApiData:any
-  config:{
+  ParentApiData?:any[]
+  config:ObjectConfig
 
-      isPaginateByApi : boolean,
-      ApiPath : string,
-      UniqueID : string,
-      InitialPaging:number,
-      ItemsPerPage:number
-  }
-  columns:any[]
+
+  columns:ColumnDefinition[]
 
   constructor() {
   //send data to child with the necessary columns only
-  this.columns = [{
+  this.columns = [
+
+  {
+    key:"ID",
+    isSortable:true,
+    type:'number',
+    isUnique:true,
+    perfered_width : 20,
+    Default_Sorted : 'asc'
+  },
+    {
     key:"address",
     isSortable:true,
-    type:String,
+    type:'string',
+    isUnique:false,
     perfered_width : 20,
     Default_Sorted : 'asc'
   }, {
     key:"reporter",
-    isSortable:true,
-    type:String,
+    isSortable:false,
+    type:'string',
+    isUnique:false,
     perfered_width : 20,
     Default_Sorted : 'desc'
   },
   {
     key:"history",
     isSortable:true,
-    type: Date ,
+    type: 'Date' ,
+    isUnique:true,
     perfered_width : 20,
-    Default_Sorted : 'desc'
+    Default_Sorted : 'asc'
   }
 ]
-  this.ParentApiData = data
-  /*
-.map(obj => {
-    Object.keys(obj).forEach(key => {
-      if(key != )
+
+  const remaing = this.columns.map(arr => arr.key)
+  const ObjectKeys = Object.keys(data[0])
+
+  this.ParentApiData = data.map(obj => {
+    //sending only the right columns
+    ObjectKeys.forEach(key => {
+      if(!remaing.includes(key)){
+        delete obj[key]
+      }
     })
-  })
-  */
+    //uncomment to check the custom pipe
+     // obj["history"] = new Date( obj["history"])
+      return obj
+
+    })
+
+  //  console.log(this.ParentApiData)
+
+
     this.config={
-      isPaginateByApi : true,
-      ApiPath : '../data.json',
+      isPaginateByApi : false,
+      ApiPath : 'assets/data.json',
       UniqueID : 'ID',
       InitialPaging:1,
       ItemsPerPage:5
     }
-    //need to improve
+
 
 
 
@@ -231,7 +252,7 @@ export class AppComponent {
 
   onRecordSelection(selectedrow:any){
     //listener for the developer to implement custom logic
-    console.log(selectedrow)
+    console.log("evemt ;listener")
   }
 
 

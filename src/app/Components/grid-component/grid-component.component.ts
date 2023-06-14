@@ -1,5 +1,6 @@
+import { HttpClient } from '@angular/common/http';
 import { Component, Input, OnChanges, Output, EventEmitter, OnInit, SimpleChanges } from '@angular/core';
-
+import {ColumnDefinition , ObjectConfig} from '../../types/types'
 
 @Component({
   selector: 'app-grid-component',
@@ -12,49 +13,22 @@ import { Component, Input, OnChanges, Output, EventEmitter, OnInit, SimpleChange
 export class GridComponentComponent implements OnInit {
 
 
-  //filterd arrays
-  FilteredNotProjectedData: any
   ProjectedData: any
-  //AllDataAfterPagination: any
+
 
   maxPage!: number
   maxItems!: number
   PageNum!: number
 
-  @Input() rows!: any
-  @Input() options!:any
+  @Input() rows?: any
+  @Input() options!:ObjectConfig
 
-  @Input() columns!: string[]
+  @Input() columns!: ColumnDefinition[]
   @Output() RecordSelection = new EventEmitter()
 
-  constructor() {}
+  constructor(private http:HttpClient) {}
 
 
-  filterData() {
-
-    var allkeys = Object.keys(this.rows[0])
-    var RemainngKeys = allkeys.filter(key => !this.columns.includes(key))
-
-    //need to improve
-    this.ProjectedData = this.rows.map((obj: any) => ({ ...obj }))
-
-
-    this.FilteredNotProjectedData = this.ProjectedData.map((obj: any) => {
-      for (const key of RemainngKeys) {
-        if(key != 'checked'){
-          delete obj[key]
-        }
-
-
-
-      }
-      return obj
-    })
-
-    debugger
-
-
-  }
   ngOnInit(): void {
     this.init()
   }
@@ -72,6 +46,7 @@ export class GridComponentComponent implements OnInit {
 
   get Allchecked() {
     debugger
+    if(!this.ProjectedData){return false}
     for (let i = 0; i < this.ProjectedData.length; i++) {
       if (   !this.ProjectedData[i].hasOwnProperty('checked') || this.ProjectedData[i].checked == false) {
         return false
@@ -85,7 +60,7 @@ export class GridComponentComponent implements OnInit {
     let start = this.maxItems * (pagenum - 1)
     let end = this.maxItems * pagenum
     //need to improv
-    this.ProjectedData = this.FilteredNotProjectedData.slice(start, end) //start = 5 , end = 10
+    this.ProjectedData = this.rows.slice(start, end) //start = 5 , end = 10
   }
   NextPage() {
 
@@ -102,14 +77,43 @@ export class GridComponentComponent implements OnInit {
 
   init(){
 
-    var initialPage = this.options.InitialPaging || 1
-    this.maxItems = this.options.ItemsPerPage || 5
 
-    this.filterData()
-    this.maxPage = Math.ceil(this.rows!.length / this.maxItems)
+    /*
+  this.config={
+      isPaginateByApi : true,
+      ApiPath : '../data.json',
+      UniqueID : 'ID',
+      InitialPaging:1,
+      ItemsPerPage:5
+    }
+    */
+    var initialPage = this.options.InitialPaging <= 0 ? 1 : this.options.InitialPaging
+    this.maxItems = this.options.ItemsPerPage <= 0 ? 5 : this.options.ItemsPerPage
+
     this.PageNum = initialPage
 
-    this.ProjectedData = this.ProjectedData.slice(5 * (initialPage - 1), this.maxItems)
+    this.maxPage = Math.ceil(this.rows?.length / this.maxItems)
+    if(this.options.isPaginateByApi){
+      this.http.get(this.options.ApiPath).subscribe((res) => {
+
+
+            this.rows = res
+            this.maxPage = Math.ceil(this.rows!.length / this.maxItems)
+            //sorting step
+            this.columns.forEach(colum => {
+              this.SortByColumn(colum , true)
+            })
+
+            this.updateTable()
+
+          })
+    }else{
+
+      this.updateTable()
+    }
+   // this.filterData()
+
+
   }
 
 
@@ -117,65 +121,82 @@ export class GridComponentComponent implements OnInit {
   CheckAll(event: any) {
 
     let id_arr: string[] = []
+    let uniqueColumn = this.columns.filter(column => column.isUnique)
+    this.ProjectedData.forEach((obj:any) => {
 
-    this.rows.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
-    .forEach((element: any) => {
-      id_arr.push(element['ID']);
-    });
+      let testkey = uniqueColumn.map(col => obj[col.key]).join("")
+      id_arr.push(testkey);
 
-    this.onRecordSelection([id_arr, event.target.checked])
+    })
+    this.onRecordSelection([id_arr, event.target.checked] ,id_arr)
     this.RecordSelection.emit([id_arr, event.target.checked])
     //
 
   }
 
   CheckOne(event: any, index: number) {
-debugger
-    let id_arr: any[] = []
-    let targetIndex = this.PageNum > 1 ? index + (this.maxItems) : index
 
-    //need to improv
-    id_arr.push(this.rows[targetIndex]['ID']);
-    this.onRecordSelection([id_arr, event.target.checked])
-    this.RecordSelection.emit([id_arr, event.target.checked])
-   //this.onRecordSelection([id_arr, event.target.checked])
+    let targetIndex = this.PageNum > 1 ? index + (this.maxItems) : index
+    let uniqueColumn = this.columns.filter(column => column.isUnique)
+    let key = uniqueColumn.map(column => this.rows[targetIndex][column.key]).join("")
+    this.onRecordSelection([[key], event.target.checked] , [key])
+    this.RecordSelection.emit([[key], event.target.checked])
+  }
+
+  BubbleSorter(){
 
   }
 
-  SortByColumn(column:string , SortDirection:string){
-    let directtion = (SortDirection == 'asc' ? 1 : -1)
-    //need to improv
-    this.rows.sort((a:any, b:any) => {
+  SortByColumn(column:ColumnDefinition  , DefaultFlag:boolean){
 
-        if (a[column] < b[column]) {
+    let defaultDirection = (column.Default_Sorted == 'asc' ? 1 : -1)
+    let directtion = DefaultFlag ? defaultDirection : (defaultDirection == 1 ? -1 : 1)
+    column.Default_Sorted = directtion == 1 ? 'asc' : 'desc'
+    for(let i = 0 ; i < this.rows.length; i++){
+      for(let y = 0 ; y < this.rows.length -i -1 ; y++){
+
+        let leftside = directtion == 1 ? y+1 : y
+        let rightside = directtion == 1 ? y : y+1
+
+        if(this.rows[leftside][column.key] > this.rows[rightside][column.key]){
+          let temp = this.rows[leftside]
+          this.rows[leftside] = this.rows[rightside]
+          this.rows[rightside] = temp
+        }
+      }
+
+    }
+   /* this.rows.sort((a:any, b:any) => {
+
+        if (a[column.key] < b[column.key]) {
           return -1 * directtion;
-        } else if (a[column] > b[column]) {
+        } else if (a[column.key] > b[column.key]) {
           return 1 * directtion;
         } else {
           return 0;
         }
-      });
+      });*/
 
       this.updateTable()
   }
 
 
   updateTable(){
-
-
-    this.filterData()
-    this.ProjectedData = this.ProjectedData.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
+    this.ProjectedData = this.rows.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
   }
 
-  onRecordSelection(selectedrow:any){
+  onRecordSelection(selectedrow:any , keys:string[]){
+
+    let uniqueColumns = this.columns.filter(column => column.isUnique)
     this.rows = this.rows.map((obj:any) => {
-      if( selectedrow[0].includes(obj['ID']) ){
+      let testkey = uniqueColumns.map(col => obj[col.key]).join("")
+      if( keys.includes(testkey) ){
         return {...obj , checked:selectedrow[1]}
       }
       return obj
     })
-    this.ProjectedData = this.FilteredNotProjectedData.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
-    //console.log(selectedrow)
+
+    this.updateTable()
   }
 
 
