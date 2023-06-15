@@ -14,6 +14,7 @@ const data:any[] = [
     "lastUpdate" : "06/10/2023",
     "time" : "10:30",
     "reporter" : "John Smith",
+    "gender" : 0,
     "JobNumber" : 123456,
     "management" : "Facilities",
     "belongsTo" : "Building A"
@@ -25,6 +26,7 @@ const data:any[] = [
     "category" : "security",
     "priority" : "high",
     "state":"closed",
+    "gender" : 1,
     "history" : "05/25/2023",
     "lastUpdate" : "06/01/2023",
     "time" : "13:45",
@@ -37,6 +39,7 @@ const data:any[] = [
     "ID" : 1092,
     "address" : "789 Oak Ave",
     "category" : "cleaning",
+    "gender" : 0,
     "priority" : "medium",
     "state":"assigned",
     "history" : "06/10/2023",
@@ -54,6 +57,7 @@ const data:any[] = [
     "category" : "maintenance",
     "priority" : "high",
     "state":"closed",
+    "gender" : 1,
     "history" : "06/05/2023",
     "lastUpdate" : "06/06/2023",
     "time" : "14:15",
@@ -72,6 +76,7 @@ const data:any[] = [
     "lastUpdate" : "06/10/2023",
     "time" : "11:00",
     "reporter" : "Tom Jones",
+    "gender" : 0,
     "JobNumber" : 159357,
     "management" : "Security",
     "belongsTo" : "Building B"
@@ -84,6 +89,7 @@ const data:any[] = [
     "priority" : "low",
     "state":"assigned",
     "history" : "11/06/2023",
+    "gender" : 1,
     "lastUpdate" : "06/12/2023",
     "time" : "09:30",
     "reporter" : "Lisa Smith",
@@ -97,6 +103,7 @@ const data:any[] = [
     "category" : "maintenance",
     "priority" : "medium",
     "state":"closed",
+    "gender" : 1,
     "history" : "06/02/2023",
     "lastUpdate" : "06/03/2023",
     "time" : "16:00",
@@ -114,6 +121,7 @@ const data:any[] = [
     "state":"in progress",
     "history" : "06/07/2023",
     "lastUpdate" : "06/09/2023",
+    "gender" : 0,
     "time" : "12:30",
     "reporter" : "Karen Lee",
     "JobNumber" : 951753,
@@ -129,6 +137,7 @@ const data:any[] = [
     "state":"assigned",
     "history" : "06/09/2023",
     "lastUpdate" : "06/10/2023",
+    "gender" : 1,
     "time" : "07:00",
     "reporter" : "Adam Jones",
     "JobNumber" : 753951,
@@ -144,6 +153,7 @@ const data:any[] = [
     "state":"closed",
     "history" : "06/04/2023",
     "lastUpdate" : "06/05/2023",
+    "gender" : 0,
     "time" : "15:00",
     "reporter" : "Emily Smith",
     "JobNumber" : 369258,
@@ -176,7 +186,7 @@ export class AppComponent {
   title = 'QteckTask4';
   ParentApiData?:any[]
   config:ObjectConfig
-
+  row_data?:any[]
 
   columns:ColumnDefinition[]
 
@@ -187,39 +197,41 @@ export class AppComponent {
   {
     key:"ID",
     isSortable:true,
+    //perfered_language : "arabic",
     type:'number',
-    isUnique:true,
     perfered_width : 20,
-    Default_Sorted : 'asc'
+    Default_Sorted : 'desc'
   },
     {
     key:"address",
     isSortable:true,
     type:'string',
-    isUnique:false,
+    //perfered_language : "english",
     perfered_width : 20,
-    Default_Sorted : 'asc'
+
   }, {
-    key:"reporter",
+    key:"gender",
     isSortable:false,
     type:'string',
-    isUnique:false,
+    //perfered_language : "english",
+    isEnum:true,
+    EnumValues: {1 : 'female' , 0 : 'male'},
     perfered_width : 20,
-    Default_Sorted : 'desc'
+
   },
   {
     key:"history",
     isSortable:true,
+  //  perfered_language : "english",
     type: 'Date' ,
-    isUnique:true,
     perfered_width : 20,
-    Default_Sorted : 'asc'
+
   }
 ]
 
   const remaing = this.columns.map(arr => arr.key)
   const ObjectKeys = Object.keys(data[0])
-
+  this.row_data = data
   this.ParentApiData = data.map(obj => {
     //sending only the right columns
     ObjectKeys.forEach(key => {
@@ -239,8 +251,9 @@ export class AppComponent {
     this.config={
       isPaginateByApi : false,
       ApiPath : 'assets/data.json',
-      UniqueID : 'ID',
       InitialPaging:1,
+      PrimaryKey : ['ID'],
+      perfered_language:'arabic',
       ItemsPerPage:5
     }
 
@@ -250,10 +263,33 @@ export class AppComponent {
 
   }
 
+  // onPagination(pagenums:any){
+
+  //   this.ParentApiData = this.row_data!.slice(pagenums[0] , pagenums[1])
+  //   console.log(this.ParentApiData)
+  // }
+
   onRecordSelection(selectedrow:any){
     //listener for the developer to implement custom logic
     console.log("evemt ;listener")
   }
 
+  // onSorting(sortConfig:any){
+  //   let column:ColumnDefinition = sortConfig[0]
+  //   let sortDirection = sortConfig[1]
+
+  //   this.row_data!.sort((a:any, b:any) => {
+
+  //     if (a[column.key] < b[column.key]) {
+  //       return -1 * sortDirection;
+  //     } else if (a[column.key] > b[column.key]) {
+  //       return 1 * sortDirection;
+  //     } else {
+  //       return 0;
+  //     }
+  //   });
+  //   this.ParentApiData = this.row_data?.slice(sortConfig[2] , sortConfig[3])
+  //   debugger
+  // }
 
 }

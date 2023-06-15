@@ -3,8 +3,11 @@ export interface ColumnDefinition{
   isSortable:boolean,
   type:any,
   perfered_width : number,
-  isUnique:boolean,
-  Default_Sorted : string
+  //isUnique:boolean,
+  isEnum?:boolean,
+  EnumValues? :any
+  perfered_language?:string,
+  Default_Sorted? : string
 }
 
 export interface ObjectConfig{
@@ -12,8 +15,9 @@ export interface ObjectConfig{
 
     isPaginateByApi : boolean,
     ApiPath : string,
-    UniqueID : string,
+    PrimaryKey : string[]
     InitialPaging:number,
+    perfered_language:string,
     ItemsPerPage:number
 
 }

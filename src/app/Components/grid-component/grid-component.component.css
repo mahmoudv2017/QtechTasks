@@ -1,7 +1,17 @@
 .desc{
-  scale: 1.2; font-weight: bolder; rotate: -90deg;
+  scale: 1.2;
+    font-weight: bolder;
+    position: fixed;
+    margin-left: 3px;
+    font-size: large;
+    rotate: -90deg;
 }
 
 .asc{
-  scale: 1.2; font-weight: bolder; rotate: 90deg;
+  scale: 1.2;
+    font-weight: bolder;
+    font-size: large;
+    position: fixed;
+    margin-left: 3px;
+    rotate: 270deg;
 }

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, Input, OnChanges, Output, EventEmitter, OnInit, SimpleChanges } from '@angular/core';
 import {ColumnDefinition , ObjectConfig} from '../../types/types'
+import { GlobalServiceService } from 'src/app/Services/global-service.service';
 
 @Component({
   selector: 'app-grid-component',
@@ -10,7 +11,7 @@ import {ColumnDefinition , ObjectConfig} from '../../types/types'
 
 
 
-export class GridComponentComponent implements OnInit {
+export class GridComponentComponent implements OnInit , OnChanges{
 
 
   ProjectedData: any
@@ -19,14 +20,25 @@ export class GridComponentComponent implements OnInit {
   maxPage!: number
   maxItems!: number
   PageNum!: number
-
+  CheckedColumns:any = []
   @Input() rows?: any
   @Input() options!:ObjectConfig
 
   @Input() columns!: ColumnDefinition[]
   @Output() RecordSelection = new EventEmitter()
+  @Output() PaginatEmitter = new EventEmitter()
+  @Output() SortEmittter = new EventEmitter()
 
-  constructor(private http:HttpClient) {}
+
+  constructor(private http:HttpClient , private translateservice:GlobalServiceService) {}
+  ngOnChanges(changes: SimpleChanges): void {
+
+    if(changes['rows'].currentValue != changes['rows'].previousValue){
+      this.rows = changes['rows'].currentValue
+      this.ProjectedData = changes['rows'].currentValue
+      //this.updateTable()
+    }
+  }
 
 
   ngOnInit(): void {
@@ -48,19 +60,24 @@ export class GridComponentComponent implements OnInit {
     debugger
     if(!this.ProjectedData){return false}
     for (let i = 0; i < this.ProjectedData.length; i++) {
-      if (   !this.ProjectedData[i].hasOwnProperty('checked') || this.ProjectedData[i].checked == false) {
+      if (   !this.CheckedColumns.includes(this.ProjectedData[i])) {
         return false
       }
     }
     return true
 
   }
+
+
   SliceTable(pagenum:number){
     //maxItems = 5 , pagenum = 2
+    debugger
     let start = this.maxItems * (pagenum - 1)
     let end = this.maxItems * pagenum
-    //need to improv
+
     this.ProjectedData = this.rows.slice(start, end) //start = 5 , end = 10
+
+    //need to improv
   }
   NextPage() {
 
@@ -90,26 +107,38 @@ export class GridComponentComponent implements OnInit {
     var initialPage = this.options.InitialPaging <= 0 ? 1 : this.options.InitialPaging
     this.maxItems = this.options.ItemsPerPage <= 0 ? 5 : this.options.ItemsPerPage
 
+      this.translateservice.setLanguage(this.options.perfered_language)
+
+
     this.PageNum = initialPage
 
     this.maxPage = Math.ceil(this.rows?.length / this.maxItems)
+
     if(this.options.isPaginateByApi){
       this.http.get(this.options.ApiPath).subscribe((res) => {
 
 
             this.rows = res
             this.maxPage = Math.ceil(this.rows!.length / this.maxItems)
-            //sorting step
-            this.columns.forEach(colum => {
-              this.SortByColumn(colum , true)
-            })
 
-            this.updateTable()
+            this.columns.forEach(colum => {
+              if(colum.Default_Sorted){
+                this.defaultsort(colum )
+            }
+          })
+
 
           })
     }else{
 
-      this.updateTable()
+      this.columns.forEach(colum => {
+        if(colum.Default_Sorted){
+          this.defaultsort(colum )
+      }
+
+
+     })
+
     }
    // this.filterData()
 
@@ -121,14 +150,14 @@ export class GridComponentComponent implements OnInit {
   CheckAll(event: any) {
 
     let id_arr: string[] = []
-    let uniqueColumn = this.columns.filter(column => column.isUnique)
+    let uniqueColumn = this.columns.filter(column => this.options.PrimaryKey.includes(column.key))
     this.ProjectedData.forEach((obj:any) => {
 
       let testkey = uniqueColumn.map(col => obj[col.key]).join("")
       id_arr.push(testkey);
 
     })
-    this.onRecordSelection([id_arr, event.target.checked] ,id_arr)
+    this.onRecordSelection( event.target.checked,id_arr)
     this.RecordSelection.emit([id_arr, event.target.checked])
     //
 
@@ -137,28 +166,31 @@ export class GridComponentComponent implements OnInit {
   CheckOne(event: any, index: number) {
 
     let targetIndex = this.PageNum > 1 ? index + (this.maxItems) : index
-    let uniqueColumn = this.columns.filter(column => column.isUnique)
-    let key = uniqueColumn.map(column => this.rows[targetIndex][column.key]).join("")
-    this.onRecordSelection([[key], event.target.checked] , [key])
+
+    let key = this.columns.map(column => {
+      if( this.options.PrimaryKey.includes(column.key)) {return this.rows[targetIndex][column.key]}
+      return null
+    }).join("")
+   // let uniqueColumn = this.columns.filter(column => this.options.PrimaryKey.includes(column.key))
+    //let key = uniqueColumn.map(column => this.rows[targetIndex][column.key]).join("")
+    this.onRecordSelection( event.target.checked , [key])
     this.RecordSelection.emit([[key], event.target.checked])
   }
 
-  BubbleSorter(){
+  defaultsort(head:ColumnDefinition){
+    let defaultDirection = (head.Default_Sorted == 'asc' ? 1 : -1)
 
-  }
+    head.Default_Sorted = defaultDirection == 1 ? 'asc' : 'desc'
 
-  SortByColumn(column:ColumnDefinition  , DefaultFlag:boolean){
 
-    let defaultDirection = (column.Default_Sorted == 'asc' ? 1 : -1)
-    let directtion = DefaultFlag ? defaultDirection : (defaultDirection == 1 ? -1 : 1)
-    column.Default_Sorted = directtion == 1 ? 'asc' : 'desc'
+    debugger
     for(let i = 0 ; i < this.rows.length; i++){
       for(let y = 0 ; y < this.rows.length -i -1 ; y++){
 
-        let leftside = directtion == 1 ? y+1 : y
-        let rightside = directtion == 1 ? y : y+1
+        let leftside = defaultDirection == 1 ? y+1 : y
+        let rightside = defaultDirection == 1 ? y : y+1
 
-        if(this.rows[leftside][column.key] > this.rows[rightside][column.key]){
+        if(this.rows[leftside][head.key] > this.rows[rightside][head.key]){
           let temp = this.rows[leftside]
           this.rows[leftside] = this.rows[rightside]
           this.rows[rightside] = temp
@@ -166,18 +198,20 @@ export class GridComponentComponent implements OnInit {
       }
 
     }
-   /* this.rows.sort((a:any, b:any) => {
 
-        if (a[column.key] < b[column.key]) {
-          return -1 * directtion;
-        } else if (a[column.key] > b[column.key]) {
-          return 1 * directtion;
-        } else {
-          return 0;
-        }
-      });*/
+    this.ProjectedData = this.rows.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
 
-      this.updateTable()
+
+  }
+
+
+  SortByColumn(rowsOnly:any){
+
+
+    this.rows = rowsOnly
+    this.updateTable()
+
+
   }
 
 
@@ -185,18 +219,30 @@ export class GridComponentComponent implements OnInit {
     this.ProjectedData = this.rows.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
   }
 
+   ifChecked(record:any){
+
+    return this.CheckedColumns.includes(record)
+  }
   onRecordSelection(selectedrow:any , keys:string[]){
 
-    let uniqueColumns = this.columns.filter(column => column.isUnique)
+    let uniqueColumns = this.columns.filter(column =>  this.options.PrimaryKey.includes(column.key) )
+
     this.rows = this.rows.map((obj:any) => {
       let testkey = uniqueColumns.map(col => obj[col.key]).join("")
+
       if( keys.includes(testkey) ){
-        return {...obj , checked:selectedrow[1]}
+
+        if(selectedrow){
+          this.CheckedColumns.push(obj)
+          return obj
+        }
+
+        this.CheckedColumns = this.CheckedColumns.filter( (local_obj:any) => !Object.is(local_obj , obj)  )
       }
       return obj
     })
 
-    this.updateTable()
+   // this.updateTable()
   }
 
 

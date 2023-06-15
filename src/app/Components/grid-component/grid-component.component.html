@@ -5,14 +5,12 @@
     <thead>
 
       <tr >
-        <th><input type="checkbox" (change)="CheckAll($event)" [checked]="Allchecked" ></th>
-        <th  *ngFor="let head of columns;"  [appSort]="head" (SortData)="SortByColumn(head,false)" >{{head.key}}
-          <span *ngIf="head.isSortable" >{{head.Default_Sorted}}</span>
-          <!-- <div *ngIf="head.isSortable" style="transform: translateX(-10%); width: fit-content; margin: auto;">
-            <button *ngIf="head.Default_Sorted == 'desc'" (click)="SortByColumn(head , false)" class="desc" >></button>
-            <button *ngIf="head.Default_Sorted == 'asc'" (click)="SortByColumn(head , false)" class="asc" >></button>
-          </div> -->
+        <th><input type="checkbox" (change)="CheckAll($event)" [checked]="Allchecked"  ></th>
+        <th  *ngFor="let head of columns;"
 
+        [appSort]="[rows,head]"
+        (SortData)="SortByColumn($event)" >{{head.key | transaltePipe:options.perfered_language }}
+          <span [ngClass]="head.Default_Sorted == 'asc' ? 'asc' : 'desc'" *ngIf="head.isSortable" >{{head.Default_Sorted == 'asc' ? '>' : '<'}}</span>
         </th>
       </tr>
     </thead>
@@ -20,9 +18,9 @@
     <tbody>
 
         <tr *ngFor="let record of ProjectedData;let i = index">
-          <td style="width: 2%;" ><span> <input type="checkbox" (change)="CheckOne($event,i)" [checked]="record.checked" /> </span></td>
+          <td style="width: 2%;" ><span> <input type="checkbox" (change)="CheckOne($event,i)" [checked]="ifChecked(record)" /> </span></td>
           <td [ngStyle]="{'width' : column.perfered_width + '%'}" *ngFor="let column of columns" >
-            {{ record[column.key] | customPipe:column.type  }}
+            {{ record[column.key] | customPipe:column  }}
           </td>
         </tr>
 
