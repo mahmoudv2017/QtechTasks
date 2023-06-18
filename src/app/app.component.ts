@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import {ColumnDefinition , ObjectConfig} from '../app/types/types'
+import {ColumnDefinition , ObjectConfig , Record} from '../app/types/types'
 
 const data:any[] = [
 
@@ -14,11 +14,12 @@ const data:any[] = [
     "lastUpdate" : "06/10/2023",
     "time" : "10:30",
     "reporter" : "John Smith",
-    "gender" : 0,
+    "gender" : 1,
     "JobNumber" : 123456,
     "management" : "Facilities",
     "belongsTo" : "Building A"
   },
+
 
 {
     "ID" : 1091,
@@ -39,7 +40,7 @@ const data:any[] = [
     "ID" : 1092,
     "address" : "789 Oak Ave",
     "category" : "cleaning",
-    "gender" : 0,
+    "gender" : 1,
     "priority" : "medium",
     "state":"assigned",
     "history" : "06/10/2023",
@@ -184,9 +185,10 @@ const data:any[] = [
 })
 export class AppComponent {
   title = 'QteckTask4';
-  ParentApiData?:any[]
+  ParentApiData!:Record[]
   config:ObjectConfig
-  row_data?:any[]
+  row_data?:Record[]
+  CheckedColumns:any[] = []
 
   columns:ColumnDefinition[]
 
@@ -197,32 +199,32 @@ export class AppComponent {
   {
     key:"ID",
     isSortable:true,
-    //perfered_language : "arabic",
+    displayColumn:"رقم",
     type:'number',
     perfered_width : 20,
-    Default_Sorted : 'desc'
+    Default_Sorted : 'asc'
   },
     {
     key:"address",
     isSortable:true,
+    displayColumn:"Address",
     type:'string',
-    //perfered_language : "english",
     perfered_width : 20,
 
   }, {
     key:"gender",
     isSortable:false,
     type:'string',
-    //perfered_language : "english",
+    displayColumn:"Gender",
     isEnum:true,
-    EnumValues: {1 : 'female' , 0 : 'male'},
+    EnumValues: {0 : 'female' , 1 : 'male'},
     perfered_width : 20,
 
   },
   {
     key:"history",
     isSortable:true,
-  //  perfered_language : "english",
+    displayColumn:"History",
     type: 'Date' ,
     perfered_width : 20,
 
@@ -239,21 +241,18 @@ export class AppComponent {
         delete obj[key]
       }
     })
-    //uncomment to check the custom pipe
-     // obj["history"] = new Date( obj["history"])
       return obj
 
     })
-
-  //  console.log(this.ParentApiData)
 
 
     this.config={
       isPaginateByApi : false,
       ApiPath : 'assets/data.json',
       InitialPaging:1,
-      PrimaryKey : ['ID'],
-      perfered_language:'arabic',
+     // ServerSide:true,
+      PrimaryKey : 'address',
+      //perfered_language:'english',
       ItemsPerPage:5
     }
 
@@ -263,33 +262,50 @@ export class AppComponent {
 
   }
 
-  // onPagination(pagenums:any){
-
-  //   this.ParentApiData = this.row_data!.slice(pagenums[0] , pagenums[1])
-  //   console.log(this.ParentApiData)
-  // }
+  onPagination(pagenums:any){
+    debugger
+    this.ParentApiData = this.row_data!.slice(pagenums[0] , pagenums[1])
+    console.log(this.ParentApiData)
+  }
 
   onRecordSelection(selectedrow:any){
     //listener for the developer to implement custom logic
-    console.log("evemt ;listener")
+    //this.row_data![selectedrow[1]] = {...selectedrow[0] , checked:}
+    console.log("evemt listener")
   }
 
-  // onSorting(sortConfig:any){
-  //   let column:ColumnDefinition = sortConfig[0]
-  //   let sortDirection = sortConfig[1]
 
-  //   this.row_data!.sort((a:any, b:any) => {
+  onSorting(sortConfig:any){
+    let column:ColumnDefinition = sortConfig[0]
+    column.Default_Sorted = column.Default_Sorted == 'asc' ? 'desc' : 'asc'
 
-  //     if (a[column.key] < b[column.key]) {
-  //       return -1 * sortDirection;
-  //     } else if (a[column.key] > b[column.key]) {
-  //       return 1 * sortDirection;
-  //     } else {
-  //       return 0;
-  //     }
-  //   });
-  //   this.ParentApiData = this.row_data?.slice(sortConfig[2] , sortConfig[3])
-  //   debugger
-  // }
+    let sortDirection = column.Default_Sorted == 'desc' ? 1 : -1
+    debugger
+    this.row_data!.sort((a:any, b:any) => {
+
+      if (a[column.key] < b[column.key]) {
+        return -1 * sortDirection;
+      } else if (a[column.key] > b[column.key]) {
+        return 1 * sortDirection;
+      } else {
+        return 0;
+      }
+    });
+    this.columns = this.columns.map(col => {
+      if(col.key == column.key){
+        col.Default_Sorted = column.Default_Sorted
+      }
+      return col
+    })
+    this.ParentApiData = this.row_data!.slice(sortConfig[1] , sortConfig[2])
+    debugger
+  }
 
 }
+
+
+  // onSearch(reciveeddata:any){
+  //   debugger
+  //   this.row_data = data!.filter( (rec:any) => ( rec[this.config.PrimaryKey] as string).includes(reciveeddata[0]) )
+  //   this.ParentApiData = this.row_data
+  // }

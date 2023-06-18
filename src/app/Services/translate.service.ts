@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { GlobalServiceService } from './global-service.service';
 
 
-const dictionary_en:any =
+const dictionary_en:{[key:string]:string} =
 
 {
   'رقم': 'ID',
@@ -14,7 +14,7 @@ const dictionary_en:any =
 
 
 
-const dictionary_ar:any =
+const dictionary_ar:{[key:string]:string} =
 {
   ID : 'رقم',
   address : "العنوان",

@@ -8,13 +8,21 @@ export class SortDirective {
 
   constructor() { }
   @Input('appSort') data!:[any[] , ColumnDefinition]
+  @Input() ServerSide!:boolean
   @Output() SortData = new EventEmitter()
+  //@Output() SortDatalater = new EventEmitter()
 
   @HostListener("click"  )
   onCLick(){
+
+
     let head = this.data[1]
     let sort_rows = this.data[0]
-    this
+    debugger
+    // if(this.ServerSide){
+    //   this.SortDataServerSide.emit([head,0,5])
+    //   return
+    // }
     if(!head.isSortable){return}
 
 

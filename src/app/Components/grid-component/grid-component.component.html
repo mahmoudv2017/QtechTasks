@@ -7,9 +7,9 @@
       <tr >
         <th><input type="checkbox" (change)="CheckAll($event)" [checked]="Allchecked"  ></th>
         <th  *ngFor="let head of columns;"
-
+        [ServerSide]="true"
         [appSort]="[rows,head]"
-        (SortData)="SortByColumn($event)" >{{head.key | transaltePipe:options.perfered_language }}
+        (SortData)="SortByColumn($event)" >{{head.displayColumn }}
           <span [ngClass]="head.Default_Sorted == 'asc' ? 'asc' : 'desc'" *ngIf="head.isSortable" >{{head.Default_Sorted == 'asc' ? '>' : '<'}}</span>
         </th>
       </tr>

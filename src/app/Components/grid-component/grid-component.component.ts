@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, Input, OnChanges, Output, EventEmitter, OnInit, SimpleChanges } from '@angular/core';
-import {ColumnDefinition , ObjectConfig} from '../../types/types'
+import {ColumnDefinition , ObjectConfig, Record} from '../../types/types'
 import { GlobalServiceService } from 'src/app/Services/global-service.service';
 
 @Component({
@@ -14,28 +14,36 @@ import { GlobalServiceService } from 'src/app/Services/global-service.service';
 export class GridComponentComponent implements OnInit , OnChanges{
 
 
-  ProjectedData: any
+  ProjectedData!: Record[]
 
 
   maxPage!: number
   maxItems!: number
   PageNum!: number
-  CheckedColumns:any = []
-  @Input() rows?: any
+  CheckedColumns:Record[] = []
+  //SearchResults:Record[] = []
+  @Input() rows!: Record[]
   @Input() options!:ObjectConfig
 
   @Input() columns!: ColumnDefinition[]
   @Output() RecordSelection = new EventEmitter()
   @Output() PaginatEmitter = new EventEmitter()
+  //@Output() SearchEmitter = new EventEmitter()
   @Output() SortEmittter = new EventEmitter()
 
 
-  constructor(private http:HttpClient , private translateservice:GlobalServiceService) {}
+  constructor(private http:HttpClient
+   //  , private translateservice:GlobalServiceService
+     ) {}
   ngOnChanges(changes: SimpleChanges): void {
-
+    console.log(changes)
     if(changes['rows'].currentValue != changes['rows'].previousValue){
       this.rows = changes['rows'].currentValue
-      this.ProjectedData = changes['rows'].currentValue
+      this.maxPage = Math.ceil(this.rows.length/this.maxItems)
+      debugger
+      let start = this.maxItems * (this.PageNum - 1)
+      let end = this.maxItems * this.PageNum
+      this.ProjectedData = changes['rows'].currentValue.slice(start,end)
       //this.updateTable()
     }
   }
@@ -74,6 +82,17 @@ export class GridComponentComponent implements OnInit , OnChanges{
     debugger
     let start = this.maxItems * (pagenum - 1)
     let end = this.maxItems * pagenum
+    // if(this.options.ServerSide){
+    //   this.PaginatEmitter.emit([start,end])
+    //   return
+    // }
+
+    //     if( this.SearchResults.length != 0 ){
+
+    //   this.ProjectedData = this.SearchResults.slice(start,end)
+    //   return
+    // }
+
 
     this.ProjectedData = this.rows.slice(start, end) //start = 5 , end = 10
 
@@ -104,18 +123,23 @@ export class GridComponentComponent implements OnInit , OnChanges{
       ItemsPerPage:5
     }
     */
-    var initialPage = this.options.InitialPaging <= 0 ? 1 : this.options.InitialPaging
-    this.maxItems = this.options.ItemsPerPage <= 0 ? 5 : this.options.ItemsPerPage
 
-      this.translateservice.setLanguage(this.options.perfered_language)
+    this.maxItems = this.options.ItemsPerPage <= 0 ? 5 : this.options.ItemsPerPage
+    this.maxPage = Math.ceil(this.rows?.length / this.maxItems)
+
+    var initialPage = this.options.InitialPaging <= 0 ? 1 : this.options.InitialPaging
+    if(this.options.InitialPaging >= this.maxPage){
+      initialPage = this.maxPage
+    }
+    //  this.translateservice.setLanguage(this.options.perfered_language)
 
 
     this.PageNum = initialPage
 
-    this.maxPage = Math.ceil(this.rows?.length / this.maxItems)
+
 
     if(this.options.isPaginateByApi){
-      this.http.get(this.options.ApiPath).subscribe((res) => {
+      this.http.get(this.options.ApiPath).subscribe((res:any) => {
 
 
             this.rows = res
@@ -149,32 +173,23 @@ export class GridComponentComponent implements OnInit , OnChanges{
   //CheckBox Part
   CheckAll(event: any) {
 
-    let id_arr: string[] = []
-    let uniqueColumn = this.columns.filter(column => this.options.PrimaryKey.includes(column.key))
-    this.ProjectedData.forEach((obj:any) => {
-
-      let testkey = uniqueColumn.map(col => obj[col.key]).join("")
-      id_arr.push(testkey);
-
+    this.ProjectedData.forEach((obj:Record) => {
+      if(event.target.checked){
+        this.CheckedColumns.push(obj)
+      }else{
+        this.CheckedColumns = this.CheckedColumns.filter( (local_obj:Record) => !Object.is(local_obj , obj)  )
+      }
     })
-    this.onRecordSelection( event.target.checked,id_arr)
-    this.RecordSelection.emit([id_arr, event.target.checked])
-    //
-
   }
 
   CheckOne(event: any, index: number) {
 
-    let targetIndex = this.PageNum > 1 ? index + (this.maxItems) : index
+    if(event.target.checked){
+      this.CheckedColumns.push(this.ProjectedData[index])
+    }else{
+      this.CheckedColumns = this.CheckedColumns.filter( (local_obj:Record) => !Object.is(local_obj , this.ProjectedData[index])  )
+    }
 
-    let key = this.columns.map(column => {
-      if( this.options.PrimaryKey.includes(column.key)) {return this.rows[targetIndex][column.key]}
-      return null
-    }).join("")
-   // let uniqueColumn = this.columns.filter(column => this.options.PrimaryKey.includes(column.key))
-    //let key = uniqueColumn.map(column => this.rows[targetIndex][column.key]).join("")
-    this.onRecordSelection( event.target.checked , [key])
-    this.RecordSelection.emit([[key], event.target.checked])
   }
 
   defaultsort(head:ColumnDefinition){
@@ -190,7 +205,7 @@ export class GridComponentComponent implements OnInit , OnChanges{
         let leftside = defaultDirection == 1 ? y+1 : y
         let rightside = defaultDirection == 1 ? y : y+1
 
-        if(this.rows[leftside][head.key] > this.rows[rightside][head.key]){
+        if(this.rows[leftside ][ head.key] > this.rows[rightside][head.key]){
           let temp = this.rows[leftside]
           this.rows[leftside] = this.rows[rightside]
           this.rows[rightside] = temp
@@ -203,9 +218,11 @@ export class GridComponentComponent implements OnInit , OnChanges{
 
 
   }
+  // emitmysortdata(data:any){
+  //   this.SortEmittter.emit(data)
+  // }
 
-
-  SortByColumn(rowsOnly:any){
+  SortByColumn(rowsOnly:{[key:string]:number|string}[]){
 
 
     this.rows = rowsOnly
@@ -214,36 +231,62 @@ export class GridComponentComponent implements OnInit , OnChanges{
 
   }
 
+  // onSearch(event:any){
+  //   debugger
+  //   this.SearchResults = []
+  //   if(event.target.value != ''){
+  //     this.rows.forEach(rec => {
+  //     if( (rec[this.options.PrimaryKey] as string).includes(event.target.value)){
+  //       this.SearchResults.push(rec)
+  //     }
+  //    })
 
+  //    this.maxPage = Math.ceil(this.SearchResults.length/this.maxItems)
+  //    this.PageNum = 1
+  //    this.ProjectedData = this.SearchResults.slice(0,this.maxItems)
+  //   }
+
+
+  //   if(this.SearchResults.length == 0){
+  //     this.maxPage = Math.ceil(this.rows.length/this.maxItems)
+  //     this.ProjectedData = this.rows.slice(0,this.maxItems)
+  //   }
+
+  // }
   updateTable(){
     this.ProjectedData = this.rows.slice(5 * (this.PageNum - 1), this.maxItems * this.PageNum)
   }
 
-   ifChecked(record:any){
+   ifChecked(record:Record){
 
     return this.CheckedColumns.includes(record)
   }
-  onRecordSelection(selectedrow:any , keys:string[]){
+  // onRecordSelection(selectedrow:any , keys:string[]){
 
-    let uniqueColumns = this.columns.filter(column =>  this.options.PrimaryKey.includes(column.key) )
+  //   let uniqueColumns = this.columns.filter(column =>  this.options.PrimaryKey.includes(column.key) )
 
-    this.rows = this.rows.map((obj:any) => {
-      let testkey = uniqueColumns.map(col => obj[col.key]).join("")
+  //   this.rows = this.rows.map((obj:any) => {
+  //     let testkey = uniqueColumns.map(col => obj[col.key]).join("")
 
-      if( keys.includes(testkey) ){
+  //     if( keys.includes(testkey) ){
 
-        if(selectedrow){
-          this.CheckedColumns.push(obj)
-          return obj
-        }
+  //       if(selectedrow){
+  //         this.CheckedColumns.push(obj)
+  //         return obj
+  //       }
 
-        this.CheckedColumns = this.CheckedColumns.filter( (local_obj:any) => !Object.is(local_obj , obj)  )
-      }
-      return obj
-    })
+  //       this.CheckedColumns = this.CheckedColumns.filter( (local_obj:any) => !Object.is(local_obj , obj)  )
+  //     }
+  //     return obj
+  //   })
 
-   // this.updateTable()
-  }
+  //  // this.updateTable()
+  // }
 
+  // oninput(event:any){
+  //   debugger
+  //   var text = event.target.value
+  //   this.SearchEmitter.emit([text])
+  // }
 
 }
